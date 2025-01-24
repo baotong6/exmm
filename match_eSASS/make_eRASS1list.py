@@ -2,7 +2,7 @@
 Author: baotong && baotong@smail.nju.edu.cn
 Date: 2024-10-21 10:24:10
 LastEditors: baotong && baotong@smail.nju.edu.cn
-LastEditTime: 2025-01-21 13:44:57
+LastEditTime: 2025-01-24 12:31:35
 FilePath: /code/match_eSASS/make_eRASS1list.py
 Description: 
 
@@ -49,7 +49,7 @@ def filter_sources_by_exposure(catalog_fits, exposure_fits, threshold=0):
 
 def filter_paras(catalog_fits):
     srclist = fits.open(catalog_fits)[1].data
-    indexlist = np.where((srclist['DET_LIKE_0'] > 10) & (srclist['EXT_LIKE'] == 0))[0]
+    indexlist = np.where((srclist['DET_LIKE_0'] > 6) & (srclist['EXT_LIKE'] == 0))[0]
     return indexlist
 
 def save_filtered_sources(input_fits, output_fits, indices):
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     path = '/Users/baotong/data_GalDisc/data/'
     catalog_fits = path + 'match_e_xmm/' + 'eRASS1_Main.v1.1.fits'
     exposure_fits = path + 'mosaic_latest/' + 'GalDisc_ima_2exp.fits.gz'
-    output_fits = path + 'eRASS1_filtered_bydet10.fits'
+    output_fits = path + 'match_e_xmm/' +'eRASS1_filtered_bydet6.fits'
 
     xmmfootprint_eid = filter_sources_by_exposure(catalog_fits=catalog_fits, exposure_fits=exposure_fits, threshold=1)
     filterindex = filter_paras(catalog_fits=catalog_fits)

@@ -2,7 +2,7 @@
 Author: baotong && baotong@smail.nju.edu.cn
 Date: 2024-12-02 12:37:31
 LastEditors: baotong && baotong@smail.nju.edu.cn
-LastEditTime: 2025-01-22 14:36:35
+LastEditTime: 2025-01-23 17:27:32
 FilePath: /code/match_eSASS/plot_3catmatch.py
 Description: 
 
@@ -289,18 +289,18 @@ def tonyfig(save=0):
     tablename='e_xmmdr14s_merge_spec_starinfo.xlsx'
     df=pd.read_excel(path+tablename,sheet_name='label')
     filtered_df = df[(df['sep_exmm'] < 17)]
-    filtered_df=filtered_df.dropna(subset=['gaia_gmag', 'gaia_bpmag','gaia_rpmag'])
+    filtered_df=filtered_df.dropna(subset=['G_corrected', 'BP_corrected','RP_corrected'])
     Lsun = 3.846e33 * u.erg / u.s
     msun=-26.7 
     absmsun = 4.66
-    Fopt=10**(0.4*(msun-np.array(filtered_df['gaia_gmag'].values)))*Lsun/(4*np.pi*(1*u.au)**2)
+    Fopt=10**(0.4*(msun-np.array(filtered_df['G_corrected'].values)))*Lsun/(4*np.pi*(1*u.au)**2)
     Fopt=Fopt.to(u.erg/u.cm**2/u.s).value
     Fx = filtered_df['xmmflux'].values
     Fx_err=filtered_df['xmmfluxerr'].values
-    BP_RP = filtered_df['gaia_bpmag'].values-filtered_df['gaia_rpmag'].values
+    BP_RP = filtered_df['BP_corrected'].values-filtered_df['RP_corrected'].values
     CTP_SEP = np.array(filtered_df['CTP_SEP'])
     ToType = np.array(filtered_df['ToType'])
-    abs_Gmag = filtered_df['gaia_gmag'].values-5 * (np.log10(filtered_df['distkpc'].values*1000/10))
+    abs_Gmag = filtered_df['G_corrected'].values-5 * (np.log10(filtered_df['distkpc'].values*1000/10))
 
     indexstar = np.where(CTP_SEP > 0)[0]
     indexnotstar = np.where(CTP_SEP < 0)[0]
@@ -309,14 +309,36 @@ def tonyfig(save=0):
     index_LMXB = np.where(ToType == 'LMXB')[0]
     index_AGN = np.where(ToType == 'AGN')[0]
     print(indexstar)
+    from dustmaps.marshall import MarshallQuery
+    from dustmaps.config import config
 
+    # Set the local data storage path for dustmaps
+    config['data_dir'] = '/Users/baotong/dustmaps/'  # Adjust this to your local path
+    marshallstar = MarshallQuery()
     hamstar = fits.open(path + 'HamStar_eRASS1_Main_Likely_Identifications_v1.1.fits')[1].data
-    distkpcall=1/hamstar['PLX']
-    absG=hamstar['G']-5*(np.log10(distkpcall*1000/10))
-    plt.figure(figsize=(8,6))
-    plt.scatter(hamstar['BP_RP'],absG,marker='.', 
+    mask = (
+        ~np.isnan(hamstar['PLX']) &  # PLX should not be NaN
+        (hamstar['PLX'] > 0) &       # PLX should be positive
+        ~np.isnan(hamstar['G']) &    # G should not be NaN
+        ~np.isnan(hamstar['BP_RP'])  # BP_RP should not be NaN
+    )
+    ra=hamstar[mask]['CTP_RA']
+    dec=hamstar[mask]['CTP_DEC']
+    distkpc=1/hamstar[mask]['PLX']
+    coords=SkyCoord(ra=ra,dec=dec,unit=(u.deg, u.deg), 
+                    frame='icrs', distance=distkpc*u.kpc)
+    ebv_samples = marshallstar(coords)
+    R_G, R_BP, R_RP = 10.1154, 12.8461, 7.5513
+    A_G = R_G * np.array(ebv_samples)
+    A_BP = R_BP * np.array(ebv_samples)
+    A_RP = R_RP * np.array(ebv_samples)
+    # Correct magnitudes
+    corrected_m_g = hamstar[mask]['G'] - A_G
+    corrected_bp_rp=hamstar[mask]['BP_RP']-(A_BP-A_RP)
+    absG=corrected_m_g-5*(np.log10(distkpc*1000/10))
+    plt.scatter(corrected_bp_rp,absG,marker='.', 
             s=5, color='brown',
-            label='All hamstars' )
+            label='All sky Hamstars' )
     plt.scatter(BP_RP[indexnotstar],abs_Gmag[indexnotstar],marker='o', 
                 s=120, color='green', edgecolor='black', alpha=0.7,
                 label='Not stars' )

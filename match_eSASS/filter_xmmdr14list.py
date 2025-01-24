@@ -2,8 +2,8 @@
 Author: baotong && baotong@smail.nju.edu.cn
 Date: 2024-11-25 17:03:59
 LastEditors: baotong && baotong@smail.nju.edu.cn
-LastEditTime: 2024-11-28 11:02:14
-FilePath: /code/xmm_cat/filter_xmmdr14list.py
+LastEditTime: 2025-01-24 12:24:48
+FilePath: /code/match_eSASS/filter_xmmdr14list.py
 Description: 
 
 Copyright (c) 2024 by baotong, All Rights Reserved. 
@@ -40,8 +40,8 @@ def filter_fits_by_indices(input_fits, output_fits, index_list):
 
 # 示例调用
 path='/Users/baotong/data_GalDisc/data/xmmdr14s/'
-input_fits = path+"GalDisc_4xmmdr14s.fits"  # 输入FITS文件路径
-output_fits = path+ "GalDisc_4xmmdr14s_newextent_cleaned.fits"  # 输出FITS文件路径
-index_list = np.loadtxt(path+'GalDisc_selected_newextent_indices.txt') # 示例索引列表，保留第0, 2, 5行
+input_fits = path+"GalDisc_4xmmdr14s.fits"  
+output_fits = path+ "GalDisc_4xmmdr14s_newextent_cleaned.fits" 
+index_list = np.loadtxt(path+'GalDisc_selected_newextent_indices.txt') 
 index_list = np.array(index_list, dtype=int)
 filter_fits_by_indices(input_fits, output_fits, index_list)

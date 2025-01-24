@@ -2,7 +2,7 @@
 Author: baotong && baotong@smail.nju.edu.cn
 Date: 2024-10-21 20:24:04
 LastEditors: baotong && baotong@smail.nju.edu.cn
-LastEditTime: 2024-11-28 11:45:37
+LastEditTime: 2025-01-24 12:32:41
 FilePath: /code/match_eSASS/make_xmmdr14list.py
 Description: 
 
@@ -79,7 +79,8 @@ def filter_and_save_indices(fits_file, selected_indices_file, unselected_indices
                     real_source = data[current_group_indices[0]]
                     if (real_source['STACK_FLAG'] <= 1 and 
                         real_source['EP_DET_ML'] >= 6 and 
-                        real_source['EXTENT'] == 0 and real_source['EXTENT_ML'] > 0):
+                        real_source['EXTENT'] == 0 
+                        ):
                         selected_indices.extend(current_group_indices)
                     else:
                         unselected_indices.extend(current_group_indices)
@@ -93,7 +94,7 @@ def filter_and_save_indices(fits_file, selected_indices_file, unselected_indices
             real_source = data[current_group_indices[0]]
             if (real_source['STACK_FLAG'] <= 1 and 
                 real_source['EP_DET_ML'] >= 6 and 
-                real_source['EXTENT'] == 0 and real_source['EXTENT_ML'] > 0):
+                real_source['EXTENT'] == 0):
                 selected_indices.extend(current_group_indices)
             else:
                 unselected_indices.extend(current_group_indices)
@@ -124,16 +125,56 @@ def save_fits_to_region(fits_file, region_output_file):
                 f.write(f"circle({r},{d},{40/3600.0})\n")  # Circle with 50" radius
 
     print(f"Region file saved as {region_output_file}")
+
+
+
+def filter_fits_by_indices(input_fits, output_fits, index_list):
+    """
+    根据索引列表过滤FITS文件的table，保存结果到新文件。
+    
+    :param input_fits: str, 输入的FITS文件路径
+    :param output_fits: str, 输出的FITS文件路径
+    :param index_list: list, 包含要保留的行号的索引列表
+    """
+    # 打开输入FITS文件
+    with fits.open(input_fits) as hdul:
+        # 获取数据和头文件
+        original_header = hdul[1].header
+        original_data = hdul[1].data
+        
+        # 过滤数据，保留索引列表中的行
+        filtered_data = original_data[index_list]
+        
+        # 创建一个新的HDUList，保留原始的header
+        new_hdu = fits.BinTableHDU(data=filtered_data, header=original_header)
+        
+        # 创建完整的HDUList
+        new_hdul = fits.HDUList([hdul[0], new_hdu])
+        
+        # 保存到新的FITS文件
+        new_hdul.writeto(output_fits, overwrite=True)
+        
+        print(f"新的FITS文件已保存到: {output_fits}")
+
+
 if __name__ == '__main__':
     path='/Users/baotong/data_GalDisc/data/'
     # filter_sources_by_exposure(catalog_fits=path+'xmmstack_v3.2_4xmmdr14s.fits.gz', 
     #                            expmap_fits=path+'mosaic_latest/'+'GalDisc_ima_2exp.fits.gz', 
     #                            output_fits=path+'GalDisc_4xmmdr14.fits')
-    save_fits_to_region(fits_file=path+'xmmdr14s/GalDisc_4xmmdr14s_new_cleaned.fits',
-                        region_output_file=path+'xmmdr14s/GalDisc_4xmmdr14s_new_cleaned.reg')
-    # filter_and_save_indices(fits_file=path+'xmmdr14s/'+'GalDisc_4xmmdr14s.fits',
-    #                     selected_indices_file=path+'xmmdr14s/'+'GalDisc_selected_newextent_indices.txt', 
-    #                     unselected_indices_file=path+'xmmdr14s/'+'GalDisc_unselected_newextent_indices.txt')
+    # save_fits_to_region(fits_file=path+'xmmdr14s/GalDisc_4xmmdr14s_new_cleaned.fits',
+    #                     region_output_file=path+'xmmdr14s/GalDisc_4xmmdr14s_new_cleaned.reg')
+
+    filter_and_save_indices(fits_file=path+'xmmdr14s/'+'GalDisc_4xmmdr14s.fits',
+                        selected_indices_file=path+'xmmdr14s/'+'GalDisc_test.txt', 
+                        unselected_indices_file=path+'xmmdr14s/'+'GalDisc_un_test.txt')
+    ## test using the same filtering as with "new_cleaned.fits"
+    input_fits = path+'xmmdr14s/'+ "GalDisc_4xmmdr14s.fits" 
+    output_fits = path+ 'xmmdr14s/'+ "GalDisc_test.fits" 
+    index_list = np.loadtxt(path+'xmmdr14s/'+'GalDisc_test.txt') 
+    index_list = np.array(index_list, dtype=int)
+    filter_fits_by_indices(input_fits, output_fits, index_list)
+    
     # xmmdr14_obs=fits.open(path+'xmmstack_v3.2_4xmmdr14s_obslist.fits.gz')
     # allobsnow=np.loadtxt(path+'allobs.txt',dtype='str')
     # obsused=np.intersect1d(allobsnow,xmmdr14_obs[1].data['OBS_ID'])

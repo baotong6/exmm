@@ -2,7 +2,7 @@
 Author: baotong && baotong@smail.nju.edu.cn
 Date: 2024-10-21 11:21:19
 LastEditors: baotong && baotong@smail.nju.edu.cn
-LastEditTime: 2025-01-21 12:41:38
+LastEditTime: 2025-01-24 15:23:15
 FilePath: /code/match_eSASS/match2fits.py
 Description: 
 
@@ -19,7 +19,8 @@ from astropy.coordinates import match_coordinates_sky
 import os,sys
 import pandas as pd
 from make_eRASS1list import filter_sources_by_exposure,filter_paras
-def load_2list(erassfits,xmmcsv):    
+"""
+def load_2list(erassfits,xmmcsv):
     hdul=fits.open(erassfits)[1].data
     xmmfootprint_eid=filter_sources_by_exposure(catalog_fits=path+'match_e_xmm/'+'eRASS1_Main.v1.1.fits',
                                exposure_fits=path+'mosaic_latest/'+'GalDisc_ima_2exp.fits.gz',
@@ -38,17 +39,10 @@ def load_2list(erassfits,xmmcsv):
     coords_xmm = SkyCoord(ra=c2_ra * u.degree, dec=c2_dec * u.degree)
 
     return coords_e,coords_xmm
+"""
 
-
-def load_2fits():    
-    # hdul=fits.open(path+'match_e_xmm/'+'eRASS1_Main.v1.1.fits')[1].data
-    # xmmfootprint_eid=filter_sources_by_exposure(catalog_fits=path+'match_e_xmm/'+'eRASS1_Main.v1.1.fits',
-    #                            exposure_fits=path+'mosaic_latest/'+'GalDisc_ima_2exp.fits.gz',
-    #                            threshold=1)
-    # filterindex=filter_paras(catalog_fits=path+'match_e_xmm/'+'eRASS1_Main.v1.1.fits')
-    # outindex=np.intersect1d(filterindex,xmmfootprint_eid)
-    # c1_data=hdul[outindex]
-    c1_data=fits.open(path+'match_e_xmm/'+'eRASS1_filtered.fits')[1].data
+def load_2fits():
+    c1_data=fits.open(path+'match_e_xmm/'+'eRASS1_filtered_bydet6.fits')[1].data
     c1_ra = c1_data['RA']
     c1_dec = c1_data['DEC']
     c2_data=fits.open('/Users/baotong/data_GalDisc/data/xmmdr14s/GalDisc_4xmmdr14s_new_cleaned.fits')[1].data
@@ -87,7 +81,7 @@ def plot_nearest_sep(coord1,coord2):
     plt.tick_params(labelsize=16)
     plt.title('Distribution of nearest neighbor distances between c2 and c1',fontsize=16)
     plt.show()
-def match_exmm(esasscoord, xmmcoord, output_file):
+def match_exmm(esasscoord, xmmcoord, output_file,threshold=16):
     """
     Find the nearest source in xmm_coords for each source in esass_coords and save the results to a CSV file.
     Parameters:
@@ -104,7 +98,7 @@ def match_exmm(esasscoord, xmmcoord, output_file):
         nearest_index = separation.argmin()
         nearest_sep = separation[nearest_index].arcsecond
         # Handle sources with a separation > 10 arcseconds
-        if nearest_sep > 15:
+        if nearest_sep > threshold:
             nomatch_count += 1
         # Append result for the current ESASS source
         output_data.append({
@@ -121,7 +115,7 @@ def match_exmm(esasscoord, xmmcoord, output_file):
     output_df = pd.DataFrame(output_data)
     output_df.to_csv(output_file, index=False)
 
-    print(f"Number of unmatched sources with separation > 15 arcseconds: {nomatch_count}")
+    print(f"Number of unmatched sources with separation > {threshold} arcseconds: {nomatch_count}")
 
 def plot_POSerr():
     c1_data=fits.open(path+'match_e_xmm/'+'eRASS1_filtered.fits')[1].data
@@ -145,8 +139,8 @@ if __name__ == '__main__':
     erassfits=path+'match_e_xmm/'+'eRASS1_Main.v1.1.fits'
     # xmmcsv=path+'mosaic_latest/clean_srclist/'+'filtered_ppsxmmsrclis_corr_ML14_EXT0_goodobs_exp_allreg_ft2sig.csv'
     (coords_e,coords_xmm)=load_2fits()
-    # match_exmm(esasscoord=coords_e,xmmcoord=coords_xmm,
-    #            output_file=path+'match_e_xmm/e_xmmdr14s_match_all.csv')
-    # plot_nearest_sep(coords_e,coords_xmm)
+    match_exmm(esasscoord=coords_e,xmmcoord=coords_xmm,
+               output_file=path+'match_e_xmm/edr6_xmmdr14s_match_all.csv',threshold=16)
+    plot_nearest_sep(coords_e,coords_xmm)
     plot_POSerr()
 
